@@ -1,0 +1,22 @@
+{
+  "entry": [
+    "eslint.config.mjs",
+    "docs/app.js",
+    "scripts/**/*.js",
+    "scripts/**/*.cjs",
+    "scripts/**/*.mjs",
+    "tests/**/*.js",
+    "tests/**/*.cjs",
+    "tests/**/*.mjs"
+  ],
+  "project": [
+    "eslint.config.mjs",
+    "docs/**/*.js",
+    "scripts/**/*.js",
+    "scripts/**/*.cjs",
+    "scripts/**/*.mjs",
+    "tests/**/*.js",
+    "tests/**/*.cjs",
+    "tests/**/*.mjs"
+  ]
+}

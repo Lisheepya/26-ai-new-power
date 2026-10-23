@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="docs 與 scripts 的 ESLint、SonarJS、jscpd、Knip 靜態檢查結果。">
+    <title>靜態分析結果 | Iris 與 AI4I</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="page-header">
+        <p class="eyebrow">Static Page · 靜態程式分析</p>
+        <h1>靜態檢查結果</h1>
+        <p class="intro">檢查範圍為 docs/ 與 scripts/ 中的 JavaScript。報告列出規則違規、重複率、未使用程式，以及前端推論程式規模。</p>
+      </header>
+
+      <nav class="reports-links" aria-label="報告導覽">
+        <a href="index.html">返回首頁</a>
+      </nav>
+
+      <section class="panel" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">檢查摘要</h2>
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th scope="col">工具</th><th scope="col">結果</th></tr></thead>
+            <tbody>
+              <tr><td>ESLint + SonarJS</td><td>2 個錯誤、0 個警告，均為函式超過 50 行</td></tr>
+              <tr><td>jscpd</td><td>掃描 2 個檔案；0 個重複片段，重複率 0%</td></tr>
+              <tr><td>Knip</td><td>未使用檔案 0 個；未使用匯出／相依項目 0 個</td></tr>
+              <tr><td>前端推論</td><td>196 實體行、8 個具名函式；含巢狀回呼共 22 個函式節點</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="rules-heading">
+        <h2 id="rules-heading">規則違規</h2>
+        <div class="metrics-table-wrap">
+          <table class="metrics-table">
+            <thead><tr><th scope="col">規則</th><th scope="col">門檻</th><th scope="col">數量</th><th scope="col">位置</th></tr></thead>
+            <tbody>
+              <tr><td><code>max-lines-per-function</code></td><td>50 行</td><td>2</td><td><code>docs/app.js:27</code> renderStoredResults：103 行；<code>docs/app.js:259</code> initPage：94 行</td></tr>
+              <tr><td><code>complexity</code></td><td>10</td><td>0</td><td>—</td></tr>
+              <tr><td><code>max-depth</code></td><td>3</td><td>0</td><td>—</td></tr>
+              <tr><td><code>sonarjs/cognitive-complexity</code></td><td>15</td><td>0</td><td>—</td></tr>
+              <tr><td><code>no-unused-vars</code>／<code>no-undef</code></td><td>—</td><td>0</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="result-source">追蹤單：<a href="https://github.com/Lisheepya/26-ai-new-power/issues/10">Issue #10</a>、<a href="https://github.com/Lisheepya/26-ai-new-power/issues/11">Issue #11</a>。</p>
+      </section>
+
+      <section class="panel" aria-labelledby="duplicates-heading">
+        <h2 id="duplicates-heading">重複率與死碼</h2>
+        <p>jscpd 掃描 2 個 JavaScript 檔案，共 437 行、7,824 tokens；重複 0 行／0 tokens，重複率 0%。沒有重複片段位置。</p>
+        <p>Knip 未發現未使用檔案、匯出或相依項目；ESLint <code>no-unused-vars</code> 也沒有未使用函式或變數。</p>
+      </section>
+
+      <section class="panel" aria-labelledby="inference-heading">
+        <h2 id="inference-heading">前端推論程式規模</h2>
+        <p>推論範圍包含模型參數、輸入驗證、神經網路計算、Iris／AI4I 預測、機率顯示與表單事件流程：共 196 實體行（186 非空行）、8 個具名函式。將巢狀函式與箭頭回呼也計入 AST 函式節點時，共 22 個。</p>
+        <p>其中純計算核心為 6 個具名函式、70 行：<code>requireFiniteNumbers</code>、<code>runHiddenLayers</code>、<code>softmax</code>、<code>sigmoid</code>、<code>predictIris</code>、<code>predictAi4i</code>。</p>
+        <p class="result-source">完整 Markdown 報告位於專案的 <code>reports/smell-report.md</code>。</p>
+      </section>
+
+      <aside class="notice">
+        <strong>分析範圍</strong>
+        <p>本頁反映 2026-10-23 對 docs/ 與 scripts/ JavaScript 的靜態掃描；不包含 HTML、CSS、JSON、圖片或 tests/。本次未修改程式碼。</p>
+      </aside>
+    </main>
+  </body>
+</html>

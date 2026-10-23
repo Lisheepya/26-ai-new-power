@@ -12,6 +12,17 @@ python iris_analysis.py
 python -m unittest discover -s tests -v
 ```
 
+## JavaScript 靜態檢查
+
+安裝開發工具後，可用一個指令執行 ESLint／SonarJS、jscpd 重複率與 Knip 死碼檢查：
+
+```powershell
+pnpm install
+pnpm run static-check
+```
+
+ESLint 對 `docs/` 使用瀏覽器全域變數，對 `scripts/` 與 `tests/` 使用 Node.js 全域變數，並套用 `complexity: 10`、`max-depth: 3`、`max-lines-per-function: 50`、`cognitive-complexity: 15` 門檻。各工具亦可分別執行 `pnpm run lint`、`pnpm run duplicates` 與 `pnpm run dead-code`。設定只檢查 JavaScript，不會改寫既有程式。
+
 若 Windows 的 `py` 啟動器不可用，可直接以已安裝的 Python 3.10 以上版本執行 `python -m venv .venv`；若 `python` 指向錯誤版本，請改用 Python 執行檔的完整路徑。
 
 ## 專案輸出
