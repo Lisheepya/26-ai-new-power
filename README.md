@@ -22,7 +22,26 @@ python -m unittest discover -s tests -v
 - `outputs/confusion_matrix.png`：測試集混淆矩陣。
 - `outputs/metrics.json`：分類指標及資料探索摘要。
 - `outputs/小論文.md`：依實際執行結果生成的小論文。
+- `data/ai4i2020.csv`：AI4I 2020 預測性維護資料集原始 CSV。
+- `outputs/ai4i_data_validation.json`：AI4I 欄位、型別、缺漏值與重複列檢查報告。
+
+## AI4I 2020 資料取得與檢查
+
+從 UCI 官方來源下載資料、驗證 10,000 筆資料與 14 個欄位，並產生檢查報告：
+
+```powershell
+python ai4i_data.py --download
+```
+
+若已經有 `data/ai4i2020.csv`，可只重新執行本機資料檢查：
+
+```powershell
+python ai4i_data.py
+```
+
+資料欄位包括識別欄位 `UDI`、`Product ID`，產品類型 `Type`，五項溫度、轉速、扭力與刀具磨耗量測，以及整體故障 `Machine failure` 和故障模式 `TWF`、`HDF`、`PWF`、`OSF`、`RNF`。本資料為合成資料；下載與分享時保留 UCI 出處，依 CC BY 4.0 授權使用。
 
 ## 資料來源
 
-Fisher, R. A. (1936). *Iris* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. License: CC BY 4.0. UCI 資料集頁面與欄位說明：https://archive.ics.uci.edu/dataset/53/iris。
+- Fisher, R. A. (1936). *Iris* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. License: CC BY 4.0. UCI 資料集頁面與欄位說明：https://archive.ics.uci.edu/dataset/53/iris。
+- UCI Machine Learning Repository. (2020). *AI4I 2020 Predictive Maintenance Dataset* [Dataset]. https://doi.org/10.24432/C5HS5C. License: CC BY 4.0. [資料集頁面與欄位說明](https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset)。
