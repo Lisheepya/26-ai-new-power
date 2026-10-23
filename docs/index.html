@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="使用 Python 訓練模型參數，在瀏覽器中進行 Iris 與 AI4I 的前端推論。">
+    <title>Iris 與 AI4I 互動推論</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="page-header">
+        <p class="eyebrow">純前端互動推論</p>
+        <h1>Iris 與 AI4I 分類示範</h1>
+        <p class="intro">選擇資料集並輸入特徵，已訓練的 Python 類神經網路會直接在這個瀏覽器頁面計算結果。</p>
+      </header>
+
+      <nav class="model-switch" aria-label="選擇推論模型">
+        <button id="show-iris" class="switch-button is-active" type="button" aria-pressed="true">Iris 花朵分類</button>
+        <button id="show-ai4i" class="switch-button" type="button" aria-pressed="false">AI4I 設備故障機率</button>
+      </nav>
+
+      <section id="experiment-results" class="panel" aria-labelledby="results-heading">
+        <h2 id="results-heading">既有實驗結果與報告</h2>
+        <p id="results-status" class="form-note" role="status">正在讀取 docs/results.json…</p>
+        <div id="results-container"></div>
+        <div id="reports-links" class="reports-links"></div>
+        <div id="figures-gallery" class="figures-gallery"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="form-heading">
+        <h2 id="form-heading">輸入特徵</h2>
+        <form id="iris-form" class="feature-form">
+          <p class="form-note">單位為公分。輸入萼片與花瓣的長、寬。</p>
+          <div class="field-grid">
+            <label>花萼長度（cm）
+              <input name="sepalLength" type="number" step="any" value="5.1" required>
+            </label>
+            <label>花萼寬度（cm）
+              <input name="sepalWidth" type="number" step="any" value="3.5" required>
+            </label>
+            <label>花瓣長度（cm）
+              <input name="petalLength" type="number" step="any" value="1.4" required>
+            </label>
+            <label>花瓣寬度（cm）
+              <input name="petalWidth" type="number" step="any" value="0.2" required>
+            </label>
+          </div>
+          <button class="submit-button" type="submit">預測 Iris 類別</button>
+        </form>
+
+        <form id="ai4i-form" class="feature-form" hidden>
+          <p class="form-note">產品等級依資料集標記選擇 L、M 或 H；溫度單位為 K。</p>
+          <div class="field-grid">
+            <label>產品等級（Type）
+              <select name="type" required>
+                <option value="L">L（低）</option>
+                <option value="M">M（中）</option>
+                <option value="H">H（高）</option>
+              </select>
+            </label>
+            <label>空氣溫度（K）
+              <input name="airTemperature" type="number" step="any" value="300.7" required>
+            </label>
+            <label>製程溫度（K）
+              <input name="processTemperature" type="number" step="any" value="312" required>
+            </label>
+            <label>轉速（rpm）
+              <input name="rotationalSpeed" type="number" step="any" value="1550" required>
+            </label>
+            <label>扭矩（Nm）
+              <input name="torque" type="number" step="any" value="32.4" required>
+            </label>
+            <label>刀具磨耗（min）
+              <input name="toolWear" type="number" step="any" value="5" required>
+            </label>
+          </div>
+          <button class="submit-button" type="submit">計算故障機率</button>
+        </form>
+      </section>
+
+      <section id="result" class="panel result-panel" aria-labelledby="result-heading" aria-live="polite" hidden>
+        <h2 id="result-heading">推論結果</h2>
+        <div id="result-content"></div>
+      </section>
+
+      <aside class="notice">
+        <strong>示範用途</strong>
+        <p>推論完全在前端執行，不會呼叫後端或傳送輸入資料。結果來自 Iris 與合成 AI4I 2020 資料集上的固定模型；AI4I 機率是模型估計，不代表真實設備的故障保證或提前預警。</p>
+      </aside>
+      <footer>模型架構、標準化器與已訓練權重內嵌於 <code>app.js</code>。</footer>
+    </main>
+  </body>
+</html>

@@ -27,6 +27,28 @@ python -m unittest discover -s tests -v
 - `outputs/ai4i_eda/`：AI4I 探索摘要與故障標籤、產品類型及感測器圖表。
 - `outputs/ai4i_modeling/model_comparison.json`：AI4I Logistic Regression 與 MLP 的模型設定、切分資訊和測試集評估結果。
 - `outputs/ai4i/`：AI4I PCA、混淆矩陣、PR/ROC 曲線、MLP 訓練 loss 與 permutation importance 圖表。
+- `docs/index.html`：Iris 與 AI4I 的純前端互動推論及實驗結果首頁；推論在瀏覽器完成，結果從同目錄的靜態 `results.json` 載入，不需後端 API。
+- `build_static_site.py`：只搬移既有 JSON、PNG 與 Markdown 報告到 `docs/`，不訓練模型、不產生新指標或重畫圖表。
+
+## 瀏覽器互動推論
+
+透過 GitHub Pages 或其他靜態檔案主機開啟 `docs/index.html`，選擇 Iris 或 AI4I，填入特徵並送出。結果共用同一區域；Iris 顯示預測類別與三類機率，AI4I 顯示故障機率。推論只在瀏覽器執行，不會上傳輸入資料。AI4I 資料集為合成資料，機率僅供模型示範，不能當作真實設備的故障保證或提前預警。
+
+頁面內嵌從 `iris_analysis.py` 與 AI4I MLP 訓練流程取出的標準化參數、權重與偏差。修改 Python 模型後，需重新匯出並更新 `docs/app.js` 中的 `TRAINED_PARAMETERS` 才能同步模型。
+
+將目前保存的實驗 JSON、圖表與兩份 Markdown 報告整理成靜態網站資料，可在專案根目錄執行：
+
+```powershell
+python build_static_site.py
+```
+
+這會複製圖表到 `docs/figures/`、產生引用既有評估 JSON 的 `docs/results.json`，並轉換成 `docs/report_iris.html` 與 `docs/report_ai4i.html`。首頁由瀏覽器讀取 `results.json`；可透過 GitHub Pages 或其他靜態檔案主機瀏覽，無需後端 API。
+
+以前端使用的 Python 預測值驗證純 JavaScript 推論（需 Node.js，無額外 npm 套件）：
+
+```powershell
+node --test tests/test_frontend_inference.cjs
+```
 
 ## AI4I 2020 資料取得與檢查
 

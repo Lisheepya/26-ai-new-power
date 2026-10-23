@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Iris 分析報告</title><style>
+body{margin:0;background:#f3f6fb;color:#172033;font-family:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.75}
+.report-page{max-width:980px;margin:32px auto;padding:32px;background:#fff;border:1px solid #e1e7f0;border-radius:16px;box-shadow:0 14px 40px #1b2f5510}
+.report-page h1,.report-page h2,.report-page h3{line-height:1.35}.report-page img{display:block;max-width:100%;height:auto;margin:20px auto;border-radius:8px}
+.report-page table{width:100%;border-collapse:collapse;margin:18px 0;display:block;overflow-x:auto}.report-page th,.report-page td{border:1px solid #d8deea;padding:8px 12px;text-align:left}.report-page th{background:#edf2fa}
+.report-page pre{overflow:auto;background:#f3f5f9;padding:16px;border-radius:8px}.report-page code{font-family:ui-monospace,Consolas,monospace}.report-page blockquote{border-left:4px solid #9bb2dd;margin:16px 0;padding:4px 16px;color:#52627c;background:#f6f8fc}
+.report-nav{max-width:980px;margin:18px auto 0;padding:0 8px}.report-nav a{color:#315fc1}
+@media(max-width:700px){.report-page{margin:12px;padding:20px;border-radius:10px}}
+</style></head><body><nav class="report-nav"><a href="index.html">← 回到實驗首頁</a></nav><main class="report-page"><h1>Iris 資料探索與神經網路分類：一項可重現的基準實驗</h1>
+<h2>摘要</h2>
+<p>本研究以 UCI Machine Learning Repository 的 Iris 資料集探索四項花朵測量特徵，使用主成分分析（PCA）呈現三維特徵分布，並以標準化與多層感知器（MLP）建立三分類模型。資料共 150 筆，分屬三個平衡類別；資料品質檢查發現 0 個缺失值與 3 筆重複列。以固定亂數種子進行分層 80/20 切分後，測試集準確率為 <strong>0.967</strong>（30 筆）。本結果顯示此小型資料集適合示範探索式視覺化與監督式分類流程，但單次切分的分數不應視為普遍效能保證。</p>
+<p><strong>關鍵詞：</strong> Iris、PCA、多層感知器、分類、模型評估</p>
+<h2>一、研究目的</h2>
+<p>鳶尾花資料集常用於示範分類方法。本實驗依序檢查資料欄位與品質、觀察不同類別在三個主成分上的分布，並評估類神經網路能否由萼片和花瓣的量測值辨識物種。</p>
+<h2>二、資料與方法</h2>
+<h3>2.1 資料集</h3>
+<p>資料取自 UCI Machine Learning Repository 的 Iris 資料集（Fisher, 1936；CC BY 4.0）。原始檔 <code>data/iris.data</code> 為無標題列的 CSV。資料含 150 筆、四個連續數值特徵及一個類別目標；每個類別各有 50 筆。</p>
+<table><thead><tr><th style="text-align:left">欄位</th><th style="text-align:left">說明</th><th style="text-align:right">全體平均（公分）</th><th style="text-align:right">最小–最大（公分）</th></tr></thead><tbody><tr><td style="text-align:left"><code>sepal_length_cm</code></td><td style="text-align:left">萼片長度（sepal length）</td><td style="text-align:right">5.84</td><td style="text-align:right">4.3–7.9</td></tr><tr><td style="text-align:left"><code>sepal_width_cm</code></td><td style="text-align:left">萼片寬度（sepal width）</td><td style="text-align:right">3.05</td><td style="text-align:right">2.0–4.4</td></tr><tr><td style="text-align:left"><code>petal_length_cm</code></td><td style="text-align:left">花瓣長度（petal length）</td><td style="text-align:right">3.76</td><td style="text-align:right">1.0–6.9</td></tr><tr><td style="text-align:left"><code>petal_width_cm</code></td><td style="text-align:left">花瓣寬度（petal width）</td><td style="text-align:right">1.20</td><td style="text-align:right">0.1–2.5</td></tr></tbody></table>
+<p>目標欄位為 <code>species</code>，類別分布如下：</p>
+<table><thead><tr><th style="text-align:left">分類標籤</th><th style="text-align:right">筆數</th></tr></thead><tbody><tr><td style="text-align:left">Iris-setosa</td><td style="text-align:right">50</td></tr><tr><td style="text-align:left">Iris-versicolor</td><td style="text-align:right">50</td></tr><tr><td style="text-align:left">Iris-virginica</td><td style="text-align:right">50</td></tr></tbody></table>
+<p>資料完整性檢查確認特徵和目標欄位共 5 欄，缺失值 0 個、完全重複列 3 筆。欄位型態為：<code>sepal_length_cm: float64, sepal_width_cm: float64, petal_length_cm: float64, petal_width_cm: float64, species: string</code>。</p>
+<h3>2.2 三維 PCA 視覺化</h3>
+<p>先將四個特徵以標準分數轉換，再以 PCA 投影到前三個主成分。前三個主成分依序解釋 <strong>72.77%</strong>、<strong>23.03%</strong>、<strong>3.68%</strong> 的變異，累積解釋變異為 <strong>99.48%</strong>。圖中以顏色表示物種；此圖用於探索結構，不作為模型測試資料的評估。</p>
+<p><img src="figures/iris/pca_3d.png" alt="Iris 三維 PCA 分布"></p>
+<h3>2.3 分類器與評估方式</h3>
+<p>以固定亂數種子 42 執行分層抽樣，保留 80%（120 筆）作為訓練集、20%（30 筆）作為測試集。分類流程先使用 <code>StandardScaler</code>，再訓練含 16 與 8 個神經元兩個隱藏層的 MLP，採 ReLU、Adam、初始學習率 0.01。標準化器只在訓練資料上擬合，避免測試資料資訊洩漏。以準確率、各類別 precision/recall/F1 和混淆矩陣評估模型。</p>
+<h2>三、實驗結果</h2>
+<p>模型在 837 次迭代後停止，最後訓練損失為 0.00030。測試集準確率為 <strong>0.967</strong>，macro-average precision、recall、F1 分數分別為 <strong>0.970</strong>、<strong>0.967</strong>、<strong>0.967</strong>；weighted-average F1 為 <strong>0.967</strong>。</p>
+<table><thead><tr><th style="text-align:left">真實分類 \ 預測分類</th><th style="text-align:right">setosa</th><th style="text-align:right">versicolor</th><th style="text-align:right">virginica</th></tr></thead><tbody><tr><td style="text-align:left">setosa</td><td style="text-align:right">10</td><td style="text-align:right">0</td><td style="text-align:right">0</td></tr><tr><td style="text-align:left">versicolor</td><td style="text-align:right">0</td><td style="text-align:right">9</td><td style="text-align:right">1</td></tr><tr><td style="text-align:left">virginica</td><td style="text-align:right">0</td><td style="text-align:right">0</td><td style="text-align:right">10</td></tr></tbody></table>
+<p><img src="figures/iris/training_loss.png" alt="MLP 訓練損失曲線"></p>
+<p><img src="figures/iris/confusion_matrix.png" alt="測試集混淆矩陣"></p>
+<p><img src="figures/iris/classification_metrics.png" alt="各類別分類指標"></p>
+<h2>四、討論</h2>
+<p>類別平衡且沒有缺失值，讓本資料集適合直接進行基準分類。PCA 將四維特徵濃縮為三維，同時保留 99.48% 的標準化特徵變異，可用來觀察類別群聚與重疊。混淆矩陣及各類別指標應搭配閱讀：若錯誤集中在特定兩類，代表其測量特徵在本次切分中較難區分。MLP 的結果受切分、初始化和超參數影響；本研究使用單一固定切分且未進行系統化調參，因此不能據此比較所有模型或推論部署效能。</p>
+<h2>五、結論</h2>
+<p>本實驗完成資料探索、三維 PCA、神經網路訓練與測試集評估，並產生訓練歷程、混淆矩陣及分類指標圖。固定種子的結果可由專案程式重現；後續可用分層交叉驗證與不同基準模型，檢查分數對資料切分的敏感度。</p>
+<h2>參考資料</h2>
+<p>Fisher, R. A. (1936). <em>Iris</em> [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C56C76. 資料集說明與欄位資訊：https://archive.ics.uci.edu/dataset/53/iris。License: CC BY 4.0.</p>
+<p>Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. <em>Journal of Machine Learning Research, 12</em>, 2825–2830. https://jmlr.org/papers/v12/pedregosa11a.html.</p></main></body></html>
