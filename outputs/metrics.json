@@ -1,0 +1,139 @@
+{
+  "dataset_source": "UCI Machine Learning Repository, Iris (DOI: 10.24432/C56C76)",
+  "dataset_summary": {
+    "rows": 150,
+    "columns": [
+      "sepal_length_cm",
+      "sepal_width_cm",
+      "petal_length_cm",
+      "petal_width_cm",
+      "species"
+    ],
+    "feature_count": 4,
+    "column_types": {
+      "sepal_length_cm": "float64",
+      "sepal_width_cm": "float64",
+      "petal_length_cm": "float64",
+      "petal_width_cm": "float64",
+      "species": "string"
+    },
+    "missing_values": 0,
+    "missing_by_column": {
+      "sepal_length_cm": 0,
+      "sepal_width_cm": 0,
+      "petal_length_cm": 0,
+      "petal_width_cm": 0,
+      "species": 0
+    },
+    "duplicate_rows": 3,
+    "class_counts": {
+      "Iris-setosa": 50,
+      "Iris-versicolor": 50,
+      "Iris-virginica": 50
+    },
+    "feature_summary": {
+      "sepal_length_cm": {
+        "mean": 5.843333333333334,
+        "std": 0.828066127977863,
+        "min": 4.3,
+        "max": 7.9
+      },
+      "sepal_width_cm": {
+        "mean": 3.0540000000000003,
+        "std": 0.4335943113621737,
+        "min": 2.0,
+        "max": 4.4
+      },
+      "petal_length_cm": {
+        "mean": 3.758666666666666,
+        "std": 1.7644204199522626,
+        "min": 1.0,
+        "max": 6.9
+      },
+      "petal_width_cm": {
+        "mean": 1.1986666666666668,
+        "std": 0.7631607417008411,
+        "min": 0.1,
+        "max": 2.5
+      }
+    }
+  },
+  "pca_explained_variance_ratio": [
+    0.7277045209380135,
+    0.23030523267680633,
+    0.03683831957627393
+  ],
+  "accuracy": 0.9666666666666667,
+  "test_samples": 30,
+  "train_samples": 120,
+  "test_size": 0.2,
+  "random_state": 42,
+  "class_labels": [
+    "Iris-setosa",
+    "Iris-versicolor",
+    "Iris-virginica"
+  ],
+  "confusion_matrix": [
+    [
+      10,
+      0,
+      0
+    ],
+    [
+      0,
+      9,
+      1
+    ],
+    [
+      0,
+      0,
+      10
+    ]
+  ],
+  "classification_report": {
+    "Iris-setosa": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10.0
+    },
+    "Iris-versicolor": {
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1-score": 0.9473684210526315,
+      "support": 10.0
+    },
+    "Iris-virginica": {
+      "precision": 0.9090909090909091,
+      "recall": 1.0,
+      "f1-score": 0.9523809523809523,
+      "support": 10.0
+    },
+    "accuracy": 0.9666666666666667,
+    "macro avg": {
+      "precision": 0.9696969696969697,
+      "recall": 0.9666666666666667,
+      "f1-score": 0.9665831244778612,
+      "support": 30.0
+    },
+    "weighted avg": {
+      "precision": 0.9696969696969696,
+      "recall": 0.9666666666666667,
+      "f1-score": 0.9665831244778613,
+      "support": 30.0
+    }
+  },
+  "iterations": 837,
+  "final_training_loss": 0.0002960171941604515,
+  "model": {
+    "type": "MLPClassifier",
+    "hidden_layer_sizes": [
+      16,
+      8
+    ],
+    "activation": "relu",
+    "solver": "adam",
+    "max_iter": 1500,
+    "learning_rate_init": 0.01
+  }
+}
