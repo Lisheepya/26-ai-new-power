@@ -1,8 +1,9 @@
-"""Leakage-safe preprocessing and stratified splitting for AI4I classification."""
+"""Leakage-safe preprocessing and reproducible AI4I train/test splitting."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import numpy as np
 import pandas as pd
@@ -31,6 +32,12 @@ EXCLUDED_COLUMNS = (
     "OSF",
     "RNF",
 )
+SPLIT_STRATEGY_STRATIFIED_RANDOM = "stratified_random"
+SPLIT_STRATEGY_UDI_ORDERED = "udi_ordered"
+SPLIT_STRATEGIES = (
+    SPLIT_STRATEGY_STRATIFIED_RANDOM,
+    SPLIT_STRATEGY_UDI_ORDERED,
+)
 
 
 @dataclass(frozen=True)
@@ -45,6 +52,9 @@ class AI4IPreparedData:
     y_test: pd.Series
     preprocessor: ColumnTransformer
     feature_names: tuple[str, ...]
+    split_strategy: str
+    train_row_positions: tuple[int, ...]
+    test_row_positions: tuple[int, ...]
 
 
 def _make_preprocessor() -> ColumnTransformer:
@@ -63,11 +73,33 @@ def _make_preprocessor() -> ColumnTransformer:
     )
 
 
+def _ordered_row_positions(data: pd.DataFrame, test_size: float) -> tuple[np.ndarray, np.ndarray]:
+    """Return ascending-UDI row positions for a non-stratified block split."""
+    if "UDI" not in data.columns:
+        raise ValueError("UDI is required for the udi_ordered split strategy")
+
+    udi_values = pd.to_numeric(data["UDI"], errors="coerce").to_numpy(dtype=float)
+    if not np.isfinite(udi_values).all():
+        raise ValueError("UDI values must be finite numeric identifiers")
+    if len(np.unique(udi_values)) != len(udi_values):
+        raise ValueError("UDI values must be unique for an ordered split")
+    if not 0 < test_size < 1:
+        raise ValueError("test_size must be between 0 and 1 for an ordered split")
+
+    test_count = math.ceil(len(data) * test_size)
+    if test_count < 1 or test_count >= len(data):
+        raise ValueError("test_size must leave at least one row in each partition")
+
+    ordered_positions = np.argsort(udi_values, kind="stable")
+    return ordered_positions[:-test_count], ordered_positions[-test_count:]
+
+
 def prepare_ai4i_data(
     data: pd.DataFrame,
     *,
     test_size: float = 0.2,
     random_state: int = 42,
+    split_strategy: str = SPLIT_STRATEGY_STRATIFIED_RANDOM,
 ) -> AI4IPreparedData:
     """Split AI4I data and fit categorical/numeric transforms on training data only.
 
@@ -105,13 +137,24 @@ def prepare_ai4i_data(
     if non_numeric:
         raise ValueError(f"Numeric model features have non-numeric values: {non_numeric!r}")
 
-    X_train_raw, X_test_raw, y_train, y_test = train_test_split(
-        features,
-        target,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=target,
-    )
+    if split_strategy == SPLIT_STRATEGY_STRATIFIED_RANDOM:
+        train_positions, test_positions = train_test_split(
+            np.arange(len(data)),
+            test_size=test_size,
+            random_state=random_state,
+            stratify=target,
+        )
+    elif split_strategy == SPLIT_STRATEGY_UDI_ORDERED:
+        train_positions, test_positions = _ordered_row_positions(data, test_size)
+    else:
+        raise ValueError(
+            f"split_strategy must be one of {SPLIT_STRATEGIES!r}; got {split_strategy!r}"
+        )
+
+    X_train_raw = features.iloc[train_positions].copy()
+    X_test_raw = features.iloc[test_positions].copy()
+    y_train = target.iloc[train_positions].copy()
+    y_test = target.iloc[test_positions].copy()
 
     preprocessor = _make_preprocessor()
     X_train = np.asarray(preprocessor.fit_transform(X_train_raw), dtype=float)
@@ -127,4 +170,7 @@ def prepare_ai4i_data(
         y_test=y_test,
         preprocessor=preprocessor,
         feature_names=feature_names,
+        split_strategy=split_strategy,
+        train_row_positions=tuple(int(position) for position in train_positions),
+        test_row_positions=tuple(int(position) for position in test_positions),
     )

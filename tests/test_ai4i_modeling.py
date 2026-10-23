@@ -155,6 +155,38 @@ class AI4IModelingTests(unittest.TestCase):
         self.assertTrue(np.isfinite(importance["importances_mean"]).all())
         self.assertTrue(np.isfinite(importance["importances_std"]).all())
 
+    def test_modeling_records_independent_udi_ordered_split_metadata(self):
+        data = make_dataset(150)
+        data["UDI"] = np.random.default_rng(41).permutation(np.arange(1, 151))
+        expected_order = np.argsort(data["UDI"].to_numpy(), kind="stable")
+
+        report = run_ai4i_modeling(
+            data,
+            test_size=0.2,
+            random_state=19,
+            split_strategy="udi_ordered",
+        )
+
+        split = report["metadata"]["split"]
+        self.assertEqual(split["strategy"], "udi_ordered")
+        self.assertEqual(split["method"], "UDI-ordered row-block sensitivity split")
+        self.assertFalse(split["stratified"])
+        self.assertEqual(split["random_state"], None)
+        self.assertEqual(split["train_samples"], 120)
+        self.assertEqual(split["test_samples"], 30)
+        np.testing.assert_array_equal(split["train_row_positions"], expected_order[:120])
+        np.testing.assert_array_equal(split["test_row_positions"], expected_order[120:])
+        self.assertNotIn("UDI", report["metadata"]["feature_names"])
+        self.assertEqual(
+            split["test_class_counts"],
+            {
+                str(key): int(value)
+                for key, value in data.iloc[expected_order[120:]]["Machine failure"]
+                .value_counts()
+                .items()
+            },
+        )
+
     def test_estimators_fit_only_the_same_training_partition(self):
         data = make_dataset()
         prepared = prepare_ai4i_data(data, test_size=0.2, random_state=23)

@@ -78,6 +78,63 @@ class AI4IPreprocessingTests(unittest.TestCase):
         pd.testing.assert_frame_equal(first.X_test_raw, second.X_test_raw)
         pd.testing.assert_series_equal(first.y_train, second.y_train)
         pd.testing.assert_series_equal(first.y_test, second.y_test)
+        self.assertEqual(first.split_strategy, "stratified_random")
+        self.assertEqual(set(first.train_row_positions) & set(first.test_row_positions), set())
+        self.assertEqual(
+            set(first.train_row_positions) | set(first.test_row_positions),
+            set(range(len(data))),
+        )
+
+    def test_udi_ordered_split_uses_disjoint_sorted_blocks_and_train_only_fit(self):
+        data = make_dataset(500)
+        data["UDI"] = np.random.default_rng(20261023).permutation(np.arange(1, 501))
+        expected_order = np.argsort(data["UDI"].to_numpy(), kind="stable")
+
+        prepared = prepare_ai4i_data(
+            data,
+            test_size=0.2,
+            random_state=19,
+            split_strategy="udi_ordered",
+        )
+
+        expected_train = expected_order[:400]
+        expected_test = expected_order[400:]
+        np.testing.assert_array_equal(prepared.train_row_positions, expected_train)
+        np.testing.assert_array_equal(prepared.test_row_positions, expected_test)
+        self.assertEqual(prepared.split_strategy, "udi_ordered")
+        self.assertEqual(len(prepared.X_train_raw), 400)
+        self.assertEqual(len(prepared.X_test_raw), 100)
+        self.assertLess(
+            data.iloc[list(prepared.train_row_positions)]["UDI"].max(),
+            data.iloc[list(prepared.test_row_positions)]["UDI"].min(),
+        )
+        self.assertEqual(
+            int(prepared.y_train.sum()),
+            int(data.iloc[expected_train][TARGET_COLUMN].sum()),
+        )
+        self.assertEqual(
+            int(prepared.y_test.sum()),
+            int(data.iloc[expected_test][TARGET_COLUMN].sum()),
+        )
+
+        numeric_columns = list(
+            ("Air temperature [K]", "Process temperature [K]", "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]")
+        )
+        scaler = prepared.preprocessor.named_transformers_["numeric"]
+        np.testing.assert_allclose(
+            scaler.mean_, prepared.X_train_raw[numeric_columns].mean().to_numpy()
+        )
+
+    def test_udi_ordered_split_rejects_duplicate_identifiers(self):
+        data = make_dataset(100)
+        data.loc[1, "UDI"] = data.loc[0, "UDI"]
+
+        with self.assertRaisesRegex(ValueError, "UDI.*unique"):
+            prepare_ai4i_data(data, split_strategy="udi_ordered")
+
+    def test_unknown_split_strategy_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "split_strategy"):
+            prepare_ai4i_data(make_dataset(), split_strategy="unknown")
 
     def test_scaler_and_encoder_are_fitted_on_training_rows_only(self):
         data = make_dataset()

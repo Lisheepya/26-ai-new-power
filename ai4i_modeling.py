@@ -26,8 +26,14 @@ from sklearn.metrics import (
 from sklearn.neural_network import MLPClassifier
 
 from ai4i_data import DATA_PATH, DATASET_PAGE_URL, dataframe_sha256, load_ai4i_dataset
-from ai4i_preprocessing import AI4IPreparedData, prepare_ai4i_data
-from ai4i_preprocessing import NUMERIC_FEATURE_COLUMNS
+from ai4i_preprocessing import (
+    AI4IPreparedData,
+    NUMERIC_FEATURE_COLUMNS,
+    SPLIT_STRATEGIES,
+    SPLIT_STRATEGY_STRATIFIED_RANDOM,
+    SPLIT_STRATEGY_UDI_ORDERED,
+    prepare_ai4i_data,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -224,18 +230,22 @@ def run_ai4i_modeling(
     *,
     test_size: float = 0.2,
     random_state: int = 42,
+    split_strategy: str = SPLIT_STRATEGY_STRATIFIED_RANDOM,
     output_path: Path | str | None = None,
 ) -> dict[str, Any]:
-    """Compare Logistic Regression and MLP on one held-out stratified split.
+    """Compare classifiers on one held-out split strategy.
 
     Both estimators use the same train-fitted preprocessing and split returned
     by :func:`prepare_ai4i_data`. The test partition is used only for final
-    evaluation. No threshold or hyperparameter tuning is performed.
+    evaluation. No threshold or hyperparameter tuning is performed. The UDI
+    ordered option is a row-block sensitivity analysis, not validated temporal
+    evaluation because UDI is only documented as an identifier.
     """
     prepared = prepare_ai4i_data(
         data,
         test_size=test_size,
         random_state=random_state,
+        split_strategy=split_strategy,
     )
 
     models = {
@@ -278,11 +288,30 @@ def run_ai4i_modeling(
             "confusion_matrix_layout": "rows=true [0,1], columns=predicted [0,1]",
             "random_state": int(random_state),
             "split": {
-                "method": "stratified train/test split",
+                "strategy": prepared.split_strategy,
+                "method": (
+                    "stratified random train/test split"
+                    if prepared.split_strategy == SPLIT_STRATEGY_STRATIFIED_RANDOM
+                    else "UDI-ordered row-block sensitivity split"
+                ),
                 "test_size": float(test_size),
                 "train_samples": int(len(prepared.y_train)),
                 "test_samples": int(len(prepared.y_test)),
-                "stratified": True,
+                "stratified": (
+                    prepared.split_strategy == SPLIT_STRATEGY_STRATIFIED_RANDOM
+                ),
+                "random_state": (
+                    int(random_state)
+                    if prepared.split_strategy == SPLIT_STRATEGY_STRATIFIED_RANDOM
+                    else None
+                ),
+                "ordering": (
+                    "numeric UDI ascending; UDI used only to define row blocks"
+                    if prepared.split_strategy == SPLIT_STRATEGY_UDI_ORDERED
+                    else None
+                ),
+                "train_row_positions": list(prepared.train_row_positions),
+                "test_row_positions": list(prepared.test_row_positions),
                 "train_class_counts": _class_counts(prepared.y_train),
                 "test_class_counts": _class_counts(prepared.y_test),
             },
@@ -336,12 +365,19 @@ def main() -> None:
     )
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument(
+        "--split-strategy",
+        choices=SPLIT_STRATEGIES,
+        default=SPLIT_STRATEGY_STRATIFIED_RANDOM,
+        help="Use the IID stratified baseline or a UDI-ordered row-block sensitivity split",
+    )
     args = parser.parse_args()
 
     report = run_ai4i_modeling(
         load_ai4i_dataset(args.data),
         test_size=args.test_size,
         random_state=args.random_state,
+        split_strategy=args.split_strategy,
         output_path=args.output,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))

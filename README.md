@@ -103,6 +103,15 @@ python ai4i_modeling.py
 
 指標包括 accuracy、precision、recall、F1、ROC-AUC 與以 average precision 計算的 PR-AUC。此資料故障樣本僅占 3.39%，因此 accuracy 單獨可能掩蓋漏報；應同時檢視召回率、PR-AUC 與混淆矩陣。以資料集、random state 42、固定閾值 0.5 的本次結果為例，Logistic Regression 的 accuracy 為 96.75%、recall 為 10.29%、F1 為 0.177、PR-AUC 為 0.421；MLP 分別為 97.95%、55.88%、0.650、0.674。這是合成資料上的單次固定切分實驗，不能直接視為實際產線的預測能力估計。
 
+如需檢查樣本依 UDI 排序後的列區塊敏感度，可另外訓練一份獨立模型比較結果：
+
+```powershell
+python ai4i_modeling.py --test-size 0.2 --split-strategy udi_ordered --output outputs/ai4i_modeling/udi_ordered_model_comparison.json
+python ai4i_visualization.py --results outputs/ai4i_modeling/udi_ordered_model_comparison.json --output-dir outputs/ai4i/udi_ordered
+```
+
+此模式先依 UDI 數值遞增排列，再以前段作訓練、末段作測試；每次模型比較都從頭擬合，前處理器只在該次訓練列上擬合，測試集不重採樣。它是補充敏感度分析，主結果仍使用固定 random state 42 的分層 80/20 切分。UCI 將 UDI 定義為識別碼，因此 UDI 順序不等於已知時間，這不是時間驗證；模型報告會保存策略、列位置與類別數以供檢查。
+
 使用已保存的比較 JSON 與 CSV 產生圖表：
 
 ```powershell
@@ -134,6 +143,8 @@ py -m venv .venv
 .venv\Scripts\python.exe ai4i_report.py
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+UDI 順序列區塊敏感度切分是選擇性分析，不取代上述主要分層切分。執行方式與限制見「AI4I 故障分類模型比較」。
 
 若 `data/ai4i2020.csv` 已存在，可略過下載並執行 `.venv\Scripts\python.exe ai4i_data.py` 驗證本機資料。分析結果保存在 `outputs/ai4i_eda/` 與 `outputs/ai4i_modeling/`，六張模型圖表保存在 `outputs/ai4i/`。報告由 `ai4i_report.py` 從 EDA 摘要與模型比較 JSON 產生，完整內容位於 [outputs/AI4I_小論文.md](outputs/AI4I_%E5%B0%8F%E8%AB%96%E6%96%87.md)；原有 Iris 報告 `outputs/小論文.md` 保留不變。模型 JSON 會記錄實際 Python 與套件版本；不同版本或平台的底層數值可能略有差異。
 
