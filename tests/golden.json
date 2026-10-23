@@ -1,0 +1,145 @@
+{
+  "dataset": "Iris",
+  "model": "StandardScaler + MLPClassifier",
+  "training": {
+    "random_state": 42,
+    "train_samples": 120,
+    "iterations": 837,
+    "feature_order": [
+      "sepal_length_cm",
+      "sepal_width_cm",
+      "petal_length_cm",
+      "petal_width_cm"
+    ]
+  },
+  "classes": [
+    "Iris-setosa",
+    "Iris-versicolor",
+    "Iris-virginica"
+  ],
+  "examples": [
+    {
+      "input": [
+        5.1,
+        3.5,
+        1.4,
+        0.2
+      ],
+      "className": "Iris-setosa",
+      "probabilities": [
+        0.9999989312512698,
+        6.198978745402083e-07,
+        4.4885085562717255e-07
+      ]
+    },
+    {
+      "input": [
+        6.0,
+        2.9,
+        4.5,
+        1.5
+      ],
+      "className": "Iris-versicolor",
+      "probabilities": [
+        2.2175299738702352e-07,
+        0.999999707203564,
+        7.10434386091155e-08
+      ]
+    },
+    {
+      "input": [
+        6.5,
+        3.0,
+        5.2,
+        2.0
+      ],
+      "className": "Iris-virginica",
+      "probabilities": [
+        1.4750762171091174e-06,
+        3.064320746530598e-05,
+        0.9999678817163176
+      ]
+    }
+  ],
+  "ai4i": {
+    "dataset": "AI4I 2020",
+    "model": "OneHotEncoder + StandardScaler + MLPClassifier",
+    "training": {
+      "random_state": 42,
+      "train_samples": 8000,
+      "iterations": 75,
+      "numeric_feature_order": [
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "scaler_mean": [
+        300.00545,
+        310.0060625,
+        1539.356875,
+        40.0033625,
+        107.685
+      ],
+      "scaler_scale": [
+        1.996719258558899,
+        1.4793392092734339,
+        180.9716311061885,
+        10.018919350089297,
+        63.608026419627265
+      ]
+    },
+    "classes": [
+      0,
+      1
+    ],
+    "examples": [
+      {
+        "input": {
+          "type": "L",
+          "airTemperature": 300.7,
+          "processTemperature": 312.0,
+          "rotationalSpeed": 1550,
+          "torque": 32.4,
+          "toolWear": 5
+        },
+        "className": 0,
+        "probabilities": [
+          0.9999980498224028,
+          1.9501775971859965e-06
+        ]
+      },
+      {
+        "input": {
+          "type": "L",
+          "airTemperature": 300.8,
+          "processTemperature": 309.9,
+          "rotationalSpeed": 1312,
+          "torque": 65.3,
+          "toolWear": 192
+        },
+        "className": 1,
+        "probabilities": [
+          0.07218585854652859,
+          0.9278141414534714
+        ]
+      },
+      {
+        "input": {
+          "type": "M",
+          "airTemperature": 299.9,
+          "processTemperature": 310.2,
+          "rotationalSpeed": 1450,
+          "torque": 45.0,
+          "toolWear": 120
+        },
+        "className": 0,
+        "probabilities": [
+          0.9998606227250415,
+          0.0001393772749585258
+        ]
+      }
+    ]
+  }
+}

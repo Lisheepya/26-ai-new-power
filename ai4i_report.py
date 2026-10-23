@@ -81,6 +81,44 @@ def _format_metric(value: float, *, percent: bool = False) -> str:
     return f"{value:.2%}" if percent else f"{value:.3f}"
 
 
+def _split_descriptions(
+    split: dict[str, Any],
+    *,
+    rows: int,
+    train_samples: int,
+    test_samples: int,
+    test_size: float,
+    random_state: int,
+) -> tuple[str, str]:
+    """Describe a split without labeling UDI order as temporal validation."""
+    split_strategy = split.get("strategy", "stratified_random")
+    if split_strategy == "stratified_random" and split.get("stratified", True):
+        split_random_state = split.get("random_state", random_state)
+        split_summary = (
+            f"固定亂數種子 {split_random_state} 的 {1-test_size:.0%}/{test_size:.0%} "
+            "分層訓練／測試切分"
+        )
+        split_description = (
+            f"使用固定亂數種子 {split_random_state} 進行 "
+            f"{1-test_size:.0%}/{test_size:.0%} 分層切分"
+        )
+    elif split_strategy == "udi_ordered" and not split.get("stratified", False):
+        train_fraction = train_samples / rows
+        test_fraction = test_samples / rows
+        split_summary = (
+            f"依 UDI 順序列區塊敏感度切分（訓練／測試比例 "
+            f"{train_fraction:.0%}/{test_fraction:.0%}；UDI 僅為識別碼，這不是時間驗證）"
+        )
+        split_description = (
+            f"依數值 UDI 遞增排列，前 {train_fraction:.0%} 作訓練、後 "
+            f"{test_fraction:.0%} 作測試的 UDI 順序列區塊敏感度切分；"
+            "UDI 僅為識別碼，這不是時間驗證"
+        )
+    else:
+        raise ValueError(f"unsupported or inconsistent split strategy: {split_strategy!r}")
+    return split_summary, split_description
+
+
 def render_ai4i_paper(
     eda_summary: dict[str, Any],
     model_results: dict[str, Any],
@@ -157,6 +195,15 @@ def render_ai4i_paper(
         raise ValueError("EDA labels and model split class counts do not match")
     if int(metadata.get("positive_class", -1)) != 1:
         raise ValueError("the report expects Machine failure=1 as the positive class")
+
+    split_summary, split_description = _split_descriptions(
+        split,
+        rows=rows,
+        train_samples=train_samples,
+        test_samples=test_samples,
+        test_size=test_size,
+        random_state=random_state,
+    )
 
     prevalence = failure_count / rows
     test_failures = int(test_counts["1"])
@@ -252,7 +299,7 @@ def render_ai4i_paper(
 
 ## 摘要
 
-本研究使用 UCI Machine Learning Repository 的 AI4I 2020 Predictive Maintenance Dataset，探討產品類型與感測器量測能否辨識 `Machine failure`。資料包含 {rows:,} 筆、{column_count} 個欄位，故障樣本 {failure_count:,} 筆（{prevalence:.2%}），類別明顯不平衡。以同一個 {1-test_size:.0%}/{test_size:.0%} 分層訓練／測試切分，比較 Logistic Regression 與多層感知器（MLP），正類為故障、判定閾值為 {model_threshold:.2f}。測試集上 MLP 的 Recall 為 {_format_metric(mlp_metrics['recall'], percent=True)}、ROC-AUC 為 {_format_metric(mlp_metrics['roc_auc'])}、Average Precision（本專案報告欄位稱 PR-AUC）為 {_format_metric(mlp_metrics['pr_auc'])}；Logistic Regression 對應為 {_format_metric(logistic_metrics['recall'], percent=True)}、{_format_metric(logistic_metrics['roc_auc'])}、{_format_metric(logistic_metrics['pr_auc'])}。MLP 表現較佳，但仍有漏判；由於資料是合成資料且僅使用一次隨機切分，本結果不代表真實產線設備的預測能力。
+本研究使用 UCI Machine Learning Repository 的 AI4I 2020 Predictive Maintenance Dataset，探討產品類型與感測器量測能否辨識 `Machine failure`。資料包含 {rows:,} 筆、{column_count} 個欄位，故障樣本 {failure_count:,} 筆（{prevalence:.2%}），類別明顯不平衡。以{split_summary}比較 Logistic Regression 與多層感知器（MLP），正類為故障、判定閾值為 {model_threshold:.2f}。測試集上 MLP 的 Recall 為 {_format_metric(mlp_metrics['recall'], percent=True)}、ROC-AUC 為 {_format_metric(mlp_metrics['roc_auc'])}、Average Precision（本專案報告欄位稱 PR-AUC）為 {_format_metric(mlp_metrics['pr_auc'])}；Logistic Regression 對應為 {_format_metric(logistic_metrics['recall'], percent=True)}、{_format_metric(logistic_metrics['roc_auc'])}、{_format_metric(logistic_metrics['pr_auc'])}。MLP 表現較佳，但仍有漏判；由於資料是合成資料且僅使用一次固定切分，本結果不代表真實產線設備的預測能力。
 
 **關鍵詞：** 預測性維護、AI4I 2020、類別不平衡、MLP、故障分類
 
@@ -276,7 +323,7 @@ def render_ai4i_paper(
 
 ### 3.1 特徵處理與資料切分
 
-模型輸入為同筆觀測的 `Type` 與五項感測器量測，預測該筆資料的 `Machine failure` 標籤；本研究未定義往前預測的時間窗。排除 `UDI`、`Product ID` 以及五個故障模式標籤，以避免識別資訊與目標相關標籤洩漏。使用固定亂數種子 {random_state} 進行 {1-test_size:.0%}/{test_size:.0%} 分層切分：訓練集 {train_samples:,} 筆（非故障 {train_counts['0']}、故障 {train_counts['1']}），測試集 {test_samples:,} 筆（非故障 {test_nonfailures}、故障 {test_failures}）。`Type` 以 one-hot 編碼，數值特徵以標準化處理，兩者皆只在訓練資料擬合，再轉換測試資料。
+模型輸入為同筆觀測的 `Type` 與五項感測器量測，預測該筆資料的 `Machine failure` 標籤；本研究未定義往前預測的時間窗。排除 `UDI`、`Product ID` 以及五個故障模式標籤，以避免識別資訊與目標相關標籤洩漏。{split_description}：訓練集 {train_samples:,} 筆（非故障 {train_counts['0']}、故障 {train_counts['1']}），測試集 {test_samples:,} 筆（非故障 {test_nonfailures}、故障 {test_failures}）。`Type` 以 one-hot 編碼，數值特徵以標準化處理，兩者皆只在訓練資料擬合，再轉換測試資料。
 
 ### 3.2 分類器與評估
 

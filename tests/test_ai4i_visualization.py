@@ -102,6 +102,33 @@ class AI4IVisualizationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "do not match"):
                 create_ai4i_visualizations(data, stale_metrics, output_dir)
 
+    def test_creates_visualizations_for_udi_ordered_sensitivity_report(self):
+        data = make_dataset()
+        data["UDI"] = np.random.default_rng(29).permutation(np.arange(1, len(data) + 1))
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as directory:
+            root = Path(directory)
+            report = run_ai4i_modeling(
+                data,
+                test_size=0.2,
+                random_state=29,
+                split_strategy="udi_ordered",
+                output_path=root / "model_comparison.json",
+            )
+
+            paths = create_ai4i_visualizations(data, report, root / "visualizations")
+
+            self.assertEqual(set(paths), EXPECTED_VISUALS)
+            self.assertTrue(all(Path(path).is_file() for path in paths.values()))
+
+    def test_rejects_report_with_tampered_split_row_positions(self):
+        data = make_dataset()
+        report = run_ai4i_modeling(data, test_size=0.2, random_state=29)
+        report["metadata"]["split"]["train_row_positions"][0] = -1
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as directory:
+            with self.assertRaisesRegex(ValueError, "row positions"):
+                create_ai4i_visualizations(data, report, Path(directory) / "unused")
+
     def test_pca_legend_discloses_failure_counts_and_prevalence(self):
         legend, prevalence = _pca_legend_labels(
             train_y=np.array([0] * 8 + [1] * 2),

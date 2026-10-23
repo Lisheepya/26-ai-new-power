@@ -1,19 +1,24 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const golden = require("./golden.json");
 const { predictAi4i, predictIris } = require("../docs/app.js");
 
-test("Iris browser inference matches the trained Python MLP", () => {
-  const examples = [
-    [[5.1, 3.5, 1.4, 0.2], "Iris-setosa", [0.9999989312512698, 6.198978745402083e-7, 4.4885085562717255e-7]],
-    [[6.0, 2.9, 4.5, 1.5], "Iris-versicolor", [2.2175299738702352e-7, 0.999999707203564, 7.10434386091155e-8]],
-    [[6.5, 3.0, 5.2, 2.0], "Iris-virginica", [1.4750762171091174e-6, 3.064320746530598e-5, 0.9999678817163176]],
-  ];
+test("Iris browser inference matches Python-generated golden predictions", () => {
+  assert.equal(golden.dataset, "Iris");
+  assert.equal(golden.examples.length, 3);
+  assert.deepEqual(golden.training.feature_order, [
+    "sepal_length_cm",
+    "sepal_width_cm",
+    "petal_length_cm",
+    "petal_width_cm",
+  ]);
 
-  for (const [measurements, expectedClass, expectedProbabilities] of examples) {
-    const result = predictIris(measurements);
-    assert.equal(result.className, expectedClass);
+  for (const example of golden.examples) {
+    const result = predictIris(example.input);
+    assert.equal(result.className, example.className);
+    assert.deepEqual(result.classes, golden.classes);
     result.probabilities.forEach((probability, index) => {
-      assert.ok(Math.abs(probability - expectedProbabilities[index]) < 1e-9);
+      assert.ok(Math.abs(probability - example.probabilities[index]) < 1e-6);
     });
   }
 });

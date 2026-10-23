@@ -25,7 +25,9 @@ from ai4i_modeling import (
 )
 from ai4i_preprocessing import (
     NUMERIC_FEATURE_COLUMNS,
-    TARGET_COLUMN,
+    SPLIT_STRATEGIES,
+    SPLIT_STRATEGY_STRATIFIED_RANDOM,
+    SPLIT_STRATEGY_UDI_ORDERED,
     prepare_ai4i_data,
 )
 
@@ -56,15 +58,43 @@ def _validate_report(data: pd.DataFrame, report: dict[str, Any]) -> tuple[Any, d
     if int(metadata.get("positive_class", -1)) != 1:
         raise ValueError("AI4I visualizations expect Machine failure=1 as positive class")
     split = metadata.get("split", {})
-    if not split.get("stratified"):
-        raise ValueError("model report must record a stratified train/test split")
+    strategy = split.get("strategy", SPLIT_STRATEGY_STRATIFIED_RANDOM)
+    if strategy not in SPLIT_STRATEGIES:
+        raise ValueError(f"model report has an unsupported split strategy: {strategy!r}")
+    is_stratified = strategy == SPLIT_STRATEGY_STRATIFIED_RANDOM
+    recorded_stratification = split.get("stratified", is_stratified)
+    if not isinstance(recorded_stratification, bool) or recorded_stratification != is_stratified:
+        raise ValueError("model report stratification metadata does not match its strategy")
+    split_random_state = split.get("random_state", metadata.get("random_state"))
+    if is_stratified and split_random_state is None:
+        raise ValueError("stratified model report must record its split random_state")
     prepared = prepare_ai4i_data(
         data,
         test_size=float(split["test_size"]),
-        random_state=int(metadata["random_state"]),
+        random_state=int(split_random_state if split_random_state is not None else 0),
+        split_strategy=strategy,
     )
     if len(prepared.y_test) != int(split.get("test_samples", -1)):
         raise ValueError("model report test size does not match the reproduced split")
+    if len(prepared.y_train) != int(split.get("train_samples", -1)):
+        raise ValueError("model report train size does not match the reproduced split")
+
+    saved_train_positions = split.get("train_row_positions")
+    saved_test_positions = split.get("test_row_positions")
+    if strategy == SPLIT_STRATEGY_UDI_ORDERED and (
+        saved_train_positions is None or saved_test_positions is None
+    ):
+        raise ValueError("UDI-ordered reports must record split row positions")
+    if saved_train_positions is not None and not np.array_equal(
+        np.asarray(saved_train_positions, dtype=int),
+        np.asarray(prepared.train_row_positions, dtype=int),
+    ):
+        raise ValueError("model report train row positions do not match the reproduced split")
+    if saved_test_positions is not None and not np.array_equal(
+        np.asarray(saved_test_positions, dtype=int),
+        np.asarray(prepared.test_row_positions, dtype=int),
+    ):
+        raise ValueError("model report test row positions do not match the reproduced split")
 
     reference_y = np.asarray(prepared.y_test, dtype=int)
     for model_name in MODEL_NAMES:

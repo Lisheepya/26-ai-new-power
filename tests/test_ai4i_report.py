@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ai4i_report import DEFAULT_OUTPUT_PATH, generate_ai4i_paper
+from ai4i_report import DEFAULT_OUTPUT_PATH, _split_descriptions, generate_ai4i_paper
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -173,6 +173,21 @@ class AI4IReportTests(unittest.TestCase):
                         output_path=root / "no_figures.md",
                     )
 
+    def test_udi_ordered_split_description_is_sensitivity_not_temporal(self):
+        summary, description = _split_descriptions(
+            {"strategy": "udi_ordered", "stratified": False},
+            rows=10_000,
+            train_samples=8_000,
+            test_samples=2_000,
+            test_size=0.2,
+            random_state=42,
+        )
+
+        self.assertIn("UDI 順序列區塊敏感度切分", summary)
+        self.assertIn("不是時間驗證", summary)
+        self.assertIn("前 80% 作訓練、後 20% 作測試", description)
+        self.assertNotIn("分層切分", description)
+
     def test_readme_documents_clean_environment_reproduction(self):
         readme = (ROOT_DIR / "README.md").read_text(encoding="utf-8")
 
@@ -194,6 +209,8 @@ class AI4IReportTests(unittest.TestCase):
         self.assertIn("python -m venv .venv", workflow)
         self.assertIn("outputs/AI4I_小論文.md", readme)
         self.assertIn("outputs/小論文.md", readme)
+        self.assertIn("--split-strategy udi_ordered", readme)
+        self.assertIn("UDI 順序不等於已知時間，這不是時間驗證", readme)
 
 
 if __name__ == "__main__":
