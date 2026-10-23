@@ -1,0 +1,158 @@
+{
+  "dataset": {
+    "name": "AI4I 2020 Predictive Maintenance Dataset",
+    "source": "https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset",
+    "rows": 10000
+  },
+  "metadata": {
+    "target": "Machine failure",
+    "positive_class": 1,
+    "decision_threshold": 0.5,
+    "metric_definitions": {
+      "pr_auc": "Average precision, a summary of the precision-recall curve; reported as PR-AUC."
+    },
+    "confusion_matrix_layout": "rows=true [0,1], columns=predicted [0,1]",
+    "random_state": 42,
+    "split": {
+      "method": "stratified train/test split",
+      "test_size": 0.2,
+      "train_samples": 8000,
+      "test_samples": 2000,
+      "stratified": true,
+      "train_class_counts": {
+        "0": 7729,
+        "1": 271
+      },
+      "test_class_counts": {
+        "0": 1932,
+        "1": 68
+      }
+    },
+    "feature_names": [
+      "type__Type_H",
+      "type__Type_L",
+      "type__Type_M",
+      "numeric__Air temperature [K]",
+      "numeric__Process temperature [K]",
+      "numeric__Rotational speed [rpm]",
+      "numeric__Torque [Nm]",
+      "numeric__Tool wear [min]"
+    ],
+    "preprocessing": "Type one-hot encoding and sensor standardization; both transformers fit on training rows only. IDs and failure-mode labels are excluded.",
+    "imbalance_note": "Machine failure is the minority class. Accuracy alone can hide missed failures, so precision, recall, F1, ROC-AUC, PR-AUC and the confusion matrix are reported. Models use fixed settings without resampling or test-set threshold tuning.",
+    "environment": {
+      "python": "3.12.14",
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scikit_learn": "1.9.1"
+    }
+  },
+  "models": {
+    "logistic_regression": {
+      "model_params": {
+        "C": 1.0,
+        "class_weight": null,
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 2000,
+        "n_jobs": null,
+        "penalty": "l2",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "training": {
+        "iterations": [
+          27
+        ],
+        "convergence_warning": false
+      },
+      "metrics": {
+        "positive_class": 1,
+        "threshold": 0.5,
+        "accuracy": 0.9675,
+        "precision": 0.6363636363636364,
+        "recall": 0.10294117647058823,
+        "f1": 0.17721518987341772,
+        "roc_auc": 0.8993880160759956,
+        "pr_auc": 0.4205369579251732,
+        "confusion_labels": [
+          0,
+          1
+        ],
+        "confusion_matrix": [
+          [
+            1928,
+            4
+          ],
+          [
+            61,
+            7
+          ]
+        ]
+      }
+    },
+    "mlp": {
+      "model_params": {
+        "activation": "relu",
+        "alpha": 0.0001,
+        "batch_size": "auto",
+        "beta_1": 0.9,
+        "beta_2": 0.999,
+        "early_stopping": true,
+        "epsilon": 1e-08,
+        "hidden_layer_sizes": [
+          32,
+          16
+        ],
+        "learning_rate": "constant",
+        "learning_rate_init": 0.001,
+        "max_fun": 15000,
+        "max_iter": 500,
+        "momentum": 0.9,
+        "n_iter_no_change": 20,
+        "nesterovs_momentum": true,
+        "power_t": 0.5,
+        "random_state": 42,
+        "shuffle": true,
+        "solver": "adam",
+        "tol": 0.0001,
+        "validation_fraction": 0.1,
+        "verbose": false,
+        "warm_start": false
+      },
+      "training": {
+        "iterations": 75,
+        "convergence_warning": false
+      },
+      "metrics": {
+        "positive_class": 1,
+        "threshold": 0.5,
+        "accuracy": 0.9795,
+        "precision": 0.7755102040816326,
+        "recall": 0.5588235294117647,
+        "f1": 0.6495726495726496,
+        "roc_auc": 0.9571078431372549,
+        "pr_auc": 0.6735707800754321,
+        "confusion_labels": [
+          0,
+          1
+        ],
+        "confusion_matrix": [
+          [
+            1921,
+            11
+          ],
+          [
+            30,
+            38
+          ]
+        ]
+      }
+    }
+  }
+}

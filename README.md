@@ -25,6 +25,7 @@ python -m unittest discover -s tests -v
 - `data/ai4i2020.csv`：AI4I 2020 預測性維護資料集原始 CSV。
 - `outputs/ai4i_data_validation.json`：AI4I 欄位、型別、缺漏值與重複列檢查報告。
 - `outputs/ai4i_eda/`：AI4I 探索摘要與故障標籤、產品類型及感測器圖表。
+- `outputs/ai4i_modeling/model_comparison.json`：AI4I Logistic Regression 與 MLP 的模型設定、切分資訊和測試集評估結果。
 
 ## AI4I 2020 資料取得與檢查
 
@@ -57,6 +58,16 @@ from ai4i_preprocessing import prepare_ai4i_data
 prepared = prepare_ai4i_data(load_ai4i_dataset())
 print(prepared.X_train.shape, prepared.X_test.shape)
 ```
+
+## AI4I 故障分類模型比較
+
+以同一份固定亂數種子的 80/20 分層切分比較 Logistic Regression 與 MLP。兩模型共用只在訓練資料擬合的前處理；測試資料只用於最後評估，不進行測試集參數或閾值調整。正類為 `Machine failure = 1`，預設機率閾值為 0.5。執行以下指令會將模型設定、切分類別數、評估指標及混淆矩陣寫入 JSON：
+
+```powershell
+python ai4i_modeling.py
+```
+
+指標包括 accuracy、precision、recall、F1、ROC-AUC 與以 average precision 計算的 PR-AUC。此資料故障樣本僅占 3.39%，因此 accuracy 單獨可能掩蓋漏報；應同時檢視召回率、PR-AUC 與混淆矩陣。以資料集、random state 42、固定閾值 0.5 的本次結果為例，Logistic Regression 的 accuracy 為 96.75%、recall 為 10.29%、F1 為 0.177、PR-AUC 為 0.421；MLP 分別為 97.95%、55.88%、0.650、0.674。這是合成資料上的單次固定切分實驗，不能直接視為實際產線的預測能力估計。
 
 ## 資料來源
 
