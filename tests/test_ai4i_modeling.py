@@ -91,6 +91,7 @@ class AI4IModelingTests(unittest.TestCase):
         self.assertTrue(metadata["split"]["stratified"])
         self.assertEqual(metadata["random_state"], 19)
         self.assertEqual(metadata["positive_class"], 1)
+        self.assertEqual(len(first["dataset"]["data_sha256"]), 64)
         self.assertEqual(first["metadata"], second["metadata"])
         self.assertEqual(
             first["models"]["logistic_regression"]["model_params"]["penalty"], "l2"
@@ -117,6 +118,42 @@ class AI4IModelingTests(unittest.TestCase):
                 self.assertEqual(metrics["positive_class"], 1)
                 self.assertEqual(metrics["confusion_labels"], [0, 1])
                 self.assertEqual(sum(map(sum, metrics["confusion_matrix"])), 30)
+                evaluation_data = model_result["evaluation_data"]
+                self.assertEqual(len(evaluation_data["y_true"]), 30)
+                self.assertEqual(len(evaluation_data["positive_scores"]), 30)
+                self.assertTrue(set(evaluation_data["y_true"]).issubset({0, 1}))
+                self.assertTrue(
+                    np.isfinite(evaluation_data["positive_scores"]).all()
+                )
+                self.assertTrue(
+                    ((np.asarray(evaluation_data["positive_scores"]) >= 0)
+                    & (np.asarray(evaluation_data["positive_scores"]) <= 1)).all()
+                )
+
+        mlp = first["models"]["mlp"]
+        self.assertTrue(mlp["training"]["loss_curve"])
+        importance = mlp["permutation_importance"]
+        self.assertEqual(importance["scoring"], "average_precision")
+        self.assertEqual(
+            importance["feature_names"],
+            [
+                "Type",
+                "Air temperature [K]",
+                "Process temperature [K]",
+                "Rotational speed [rpm]",
+                "Torque [Nm]",
+                "Tool wear [min]",
+            ],
+        )
+        self.assertEqual(importance["type_grouping"], "all Type one-hot columns permuted together")
+        self.assertEqual(
+            len(importance["importances_mean"]), len(importance["feature_names"])
+        )
+        self.assertEqual(
+            len(importance["importances_std"]), len(importance["feature_names"])
+        )
+        self.assertTrue(np.isfinite(importance["importances_mean"]).all())
+        self.assertTrue(np.isfinite(importance["importances_std"]).all())
 
     def test_estimators_fit_only_the_same_training_partition(self):
         data = make_dataset()
@@ -144,9 +181,34 @@ class AI4IModelingTests(unittest.TestCase):
                 return dict(self.params)
 
         RecordingEstimator.instances = []
+        def fake_permutation_importance(model, prepared, **kwargs):
+            feature_names = [
+                "Type",
+                "Air temperature [K]",
+                "Process temperature [K]",
+                "Rotational speed [rpm]",
+                "Torque [Nm]",
+                "Tool wear [min]",
+            ]
+            return {
+                "scoring": "average_precision",
+                "n_repeats": 10,
+                "random_state": kwargs["random_state"],
+                "evaluation_partition": "held-out test set; post-hoc explanation only",
+                "type_grouping": "all Type one-hot columns permuted together",
+                "feature_names": feature_names,
+                "importances_mean": [0.0] * len(feature_names),
+                "importances_std": [0.0] * len(feature_names),
+            }
+
         with (
             patch.object(ai4i_modeling, "LogisticRegression", RecordingEstimator),
             patch.object(ai4i_modeling, "MLPClassifier", RecordingEstimator),
+            patch.object(
+                ai4i_modeling,
+                "_grouped_permutation_importance",
+                fake_permutation_importance,
+            ),
         ):
             run_ai4i_modeling(data, test_size=0.2, random_state=23)
 

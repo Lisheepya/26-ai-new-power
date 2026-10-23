@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import warnings
@@ -27,6 +28,7 @@ from sklearn.neural_network import MLPClassifier
 
 from ai4i_data import DATA_PATH, DATASET_PAGE_URL, load_ai4i_dataset
 from ai4i_preprocessing import AI4IPreparedData, prepare_ai4i_data
+from ai4i_preprocessing import NUMERIC_FEATURE_COLUMNS
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -123,9 +125,69 @@ def _class_counts(labels: Any) -> dict[str, int]:
     return {str(int(value)): int(count) for value, count in zip(values, counts)}
 
 
+def dataframe_sha256(data: pd.DataFrame) -> str:
+    """Fingerprint the parsed dataset using a stable UTF-8 CSV representation."""
+    canonical_csv = data.to_csv(index=False, lineterminator="\n").encode("utf-8")
+    return hashlib.sha256(canonical_csv).hexdigest()
+
+
+def _grouped_permutation_importance(
+    model: MLPClassifier,
+    prepared: AI4IPreparedData,
+    *,
+    random_state: int,
+    n_repeats: int = 10,
+) -> dict[str, Any]:
+    """Permute original features, keeping the one-hot Type group valid."""
+    names = list(prepared.feature_names)
+    groups: list[tuple[str, list[int]]] = []
+    type_columns = [
+        index for index, name in enumerate(names) if name.startswith("type__Type_")
+    ]
+    if type_columns:
+        groups.append(("Type", type_columns))
+    for raw_name in NUMERIC_FEATURE_COLUMNS:
+        transformed_name = f"numeric__{raw_name}"
+        if transformed_name in names:
+            groups.append((raw_name, [names.index(transformed_name)]))
+    if len(groups) != len(NUMERIC_FEATURE_COLUMNS) + 1:
+        raise ValueError("could not group the transformed model features for permutation")
+
+    X_test = np.asarray(prepared.X_test, dtype=float)
+    y_test = np.asarray(prepared.y_test, dtype=int)
+    positive_index = list(model.classes_).index(POSITIVE_CLASS)
+    baseline_scores = model.predict_proba(X_test)[:, positive_index]
+    baseline_ap = average_precision_score(y_test, baseline_scores)
+    rng = np.random.default_rng(random_state)
+    repeated_importances = np.empty((len(groups), n_repeats), dtype=float)
+
+    for repeat in range(n_repeats):
+        permutation = rng.permutation(len(y_test))
+        for group_index, (_, column_indices) in enumerate(groups):
+            permuted_X = X_test.copy()
+            permuted_X[:, column_indices] = X_test[permutation][:, column_indices]
+            permuted_scores = model.predict_proba(permuted_X)[:, positive_index]
+            permuted_ap = average_precision_score(y_test, permuted_scores)
+            repeated_importances[group_index, repeat] = baseline_ap - permuted_ap
+
+    return {
+        "scoring": "average_precision",
+        "n_repeats": int(n_repeats),
+        "random_state": int(random_state),
+        "evaluation_partition": "held-out test set; post-hoc explanation only",
+        "type_grouping": "all Type one-hot columns permuted together",
+        "feature_names": [name for name, _ in groups],
+        "importances_mean": repeated_importances.mean(axis=1).tolist(),
+        "importances_std": repeated_importances.std(axis=1).tolist(),
+    }
+
+
 def _fit_and_evaluate(
     model: LogisticRegression | MLPClassifier,
     prepared: AI4IPreparedData,
+    *,
+    random_state: int,
+    include_permutation_importance: bool = False,
 ) -> dict[str, Any]:
     """Fit an estimator on the shared training split and score the held-out set."""
     with warnings.catch_warnings(record=True) as captured:
@@ -137,11 +199,12 @@ def _fit_and_evaluate(
 
     positive_index = list(model.classes_).index(POSITIVE_CLASS)
     positive_scores = model.predict_proba(prepared.X_test)[:, positive_index]
-    return {
+    result = {
         "model_params": _json_safe(model.get_params(deep=False)),
         "training": {
             "iterations": _json_safe(getattr(model, "n_iter_", None)),
             "convergence_warning": bool(convergence_warning),
+            "loss_curve": _json_safe(getattr(model, "loss_curve_", [])),
         },
         "metrics": evaluate_binary_predictions(
             prepared.y_test,
@@ -149,7 +212,18 @@ def _fit_and_evaluate(
             threshold=DEFAULT_THRESHOLD,
             positive_class=POSITIVE_CLASS,
         ),
+        "evaluation_data": {
+            "y_true": _json_safe(np.asarray(prepared.y_test, dtype=int)),
+            "positive_scores": _json_safe(positive_scores),
+        },
     }
+    if include_permutation_importance:
+        result["permutation_importance"] = _grouped_permutation_importance(
+            model,
+            prepared,
+            random_state=random_state,
+        )
+    return result
 
 
 def run_ai4i_modeling(
@@ -196,6 +270,7 @@ def run_ai4i_modeling(
             "name": "AI4I 2020 Predictive Maintenance Dataset",
             "source": DATASET_PAGE_URL,
             "rows": int(len(data)),
+            "data_sha256": dataframe_sha256(data),
         },
         "metadata": {
             "target": "Machine failure",
@@ -237,7 +312,12 @@ def run_ai4i_modeling(
             },
         },
         "models": {
-            name: _fit_and_evaluate(model, prepared)
+            name: _fit_and_evaluate(
+                model,
+                prepared,
+                random_state=random_state,
+                include_permutation_importance=(name == "mlp"),
+            )
             for name, model in models.items()
         },
     }

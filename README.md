@@ -26,6 +26,7 @@ python -m unittest discover -s tests -v
 - `outputs/ai4i_data_validation.json`：AI4I 欄位、型別、缺漏值與重複列檢查報告。
 - `outputs/ai4i_eda/`：AI4I 探索摘要與故障標籤、產品類型及感測器圖表。
 - `outputs/ai4i_modeling/model_comparison.json`：AI4I Logistic Regression 與 MLP 的模型設定、切分資訊和測試集評估結果。
+- `outputs/ai4i/`：AI4I PCA、混淆矩陣、PR/ROC 曲線、MLP 訓練 loss 與 permutation importance 圖表。
 
 ## AI4I 2020 資料取得與檢查
 
@@ -68,6 +69,23 @@ python ai4i_modeling.py
 ```
 
 指標包括 accuracy、precision、recall、F1、ROC-AUC 與以 average precision 計算的 PR-AUC。此資料故障樣本僅占 3.39%，因此 accuracy 單獨可能掩蓋漏報；應同時檢視召回率、PR-AUC 與混淆矩陣。以資料集、random state 42、固定閾值 0.5 的本次結果為例，Logistic Regression 的 accuracy 為 96.75%、recall 為 10.29%、F1 為 0.177、PR-AUC 為 0.421；MLP 分別為 97.95%、55.88%、0.650、0.674。這是合成資料上的單次固定切分實驗，不能直接視為實際產線的預測能力估計。
+
+使用已保存的比較 JSON 與 CSV 產生圖表：
+
+```powershell
+python ai4i_visualization.py
+```
+
+流程會從比較 JSON 讀取測試標籤與預測機率、MLP 訓練 loss 及 permutation importance，不另行訓練或調整模型。PCA 只使用訓練切分的五項感測器特徵擬合，故障標籤只用於著色；Permutation importance 以測試集 average precision 作事後解釋，不用於模型調整。
+
+產生的圖表：
+
+- [感測器 PCA 3D 分布](outputs/ai4i/pca_3d.png)
+- [Logistic Regression 與 MLP 混淆矩陣](outputs/ai4i/confusion_matrices.png)
+- [Precision–Recall 曲線](outputs/ai4i/precision_recall_curve.png)
+- [ROC 曲線](outputs/ai4i/roc_curve.png)
+- [MLP 訓練 loss 曲線](outputs/ai4i/mlp_loss_curve.png)
+- [MLP permutation importance](outputs/ai4i/mlp_permutation_importance.png)
 
 ## 資料來源
 
