@@ -24,14 +24,7 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
     parent.append(card);
   }
 
-  function renderStoredResults(document, data) {
-    const resultsContainer = document.getElementById("results-container");
-    const reportLinks = document.getElementById("reports-links");
-    const gallery = document.getElementById("figures-gallery");
-    resultsContainer.replaceChildren();
-    reportLinks.replaceChildren();
-    gallery.replaceChildren();
-
+  function renderIrisSummary(document, resultsContainer, data) {
     const iris = data.iris;
     const irisHeading = document.createElement("h3");
     irisHeading.className = "results-subheading";
@@ -47,7 +40,9 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
     appendResultMetric(document, irisCards, "測試資料筆數", iris.test_samples);
     appendResultMetric(document, irisCards, "訓練迭代次數", iris.iterations);
     resultsContainer.append(irisHeading, irisSource, irisCards);
+  }
 
+  function renderAi4iSummary(document, resultsContainer, data) {
     const ai4iHeading = document.createElement("h3");
     ai4iHeading.className = "results-subheading";
     ai4iHeading.textContent = "AI4I 2020 測試集模型比較";
@@ -60,7 +55,9 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
     appendResultMetric(document, ai4iCards, "訓練資料筆數", data.ai4i.metadata.split.train_samples);
     appendResultMetric(document, ai4iCards, "測試資料筆數", data.ai4i.metadata.split.test_samples);
     resultsContainer.append(ai4iHeading, ai4iSource, ai4iCards);
+  }
 
+  function renderAi4iMetricsTable(document, resultsContainer, models) {
     const tableWrap = document.createElement("div");
     tableWrap.className = "metrics-table-wrap";
     const table = document.createElement("table");
@@ -77,7 +74,7 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
     head.append(headRow);
     const body = document.createElement("tbody");
     const metricKeys = ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc"];
-    Object.entries(data.ai4i.models).forEach(([modelName, model]) => {
+    Object.entries(models).forEach(([modelName, model]) => {
       const row = document.createElement("tr");
       const name = document.createElement("th");
       name.scope = "row";
@@ -93,21 +90,25 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
     table.append(head, body);
     tableWrap.append(table);
     resultsContainer.append(tableWrap);
+  }
 
-    data.reports.forEach((report) => {
+  function renderReportLinks(document, reportLinks, reports) {
+    reports.forEach((report) => {
       const link = document.createElement("a");
       link.href = report.path;
       link.textContent = `閱讀${report.title}`;
       reportLinks.append(link);
     });
+  }
 
+  function renderFiguresGallery(document, gallery, figures) {
     const groups = [
       ["iris", "Iris 圖表"],
       ["ai4i", "AI4I 模型圖表"],
       ["ai4i_eda", "AI4I 資料探索圖表"],
     ];
     groups.forEach(([key, title]) => {
-      const images = data.figures[key] || [];
+      const images = figures[key] || [];
       if (images.length === 0) return;
       const groupHeading = document.createElement("h3");
       groupHeading.className = "results-subheading";
@@ -126,6 +127,21 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
         gallery.append(card);
       });
     });
+  }
+
+  function renderStoredResults(document, data) {
+    const resultsContainer = document.getElementById("results-container");
+    const reportLinks = document.getElementById("reports-links");
+    const gallery = document.getElementById("figures-gallery");
+    resultsContainer.replaceChildren();
+    reportLinks.replaceChildren();
+    gallery.replaceChildren();
+
+    renderIrisSummary(document, resultsContainer, data);
+    renderAi4iSummary(document, resultsContainer, data);
+    renderAi4iMetricsTable(document, resultsContainer, data.ai4i.models);
+    renderReportLinks(document, reportLinks, data.reports);
+    renderFiguresGallery(document, gallery, data.figures);
   }
 
   function loadStoredResults(document) {
@@ -253,102 +269,117 @@ const TRAINED_PARAMETERS = {"iris":{"features":["sepal_length_cm","sepal_width_c
       row.append(label, meter, value);
       list.append(row);
     });
-    container.replaceChildren(list);
+    container.append(list);
+  }
+
+  function showModelForm(document, name) {
+    const showIris = name === "iris";
+    document.getElementById("iris-form").hidden = !showIris;
+    document.getElementById("ai4i-form").hidden = showIris;
+    const irisButton = document.getElementById("show-iris");
+    const ai4iButton = document.getElementById("show-ai4i");
+    irisButton.classList.toggle("is-active", showIris);
+    ai4iButton.classList.toggle("is-active", !showIris);
+    irisButton.setAttribute("aria-pressed", String(showIris));
+    ai4iButton.setAttribute("aria-pressed", String(!showIris));
+    document.getElementById("form-heading").textContent = showIris
+      ? "輸入 Iris 花朵特徵"
+      : "輸入 AI4I 設備特徵";
+    document.getElementById("result").hidden = true;
+  }
+
+  function showInferenceError(document, error) {
+    const resultContent = document.getElementById("result-content");
+    resultContent.replaceChildren();
+    const message = document.createElement("p");
+    message.setAttribute("role", "alert");
+    message.textContent = `無法計算：${error.message}`;
+    resultContent.append(message);
+    document.getElementById("result").hidden = false;
+  }
+
+  function renderIrisPrediction(document, prediction) {
+    const resultContent = document.getElementById("result-content");
+    resultContent.replaceChildren();
+    const title = document.createElement("h3");
+    title.className = "result-title";
+    title.textContent = prediction.className.replace("Iris-", "");
+    const caption = document.createElement("p");
+    caption.className = "result-caption";
+    caption.textContent = "預測類別與各類別機率";
+    resultContent.append(title, caption);
+    renderProbabilityList(resultContent, prediction.classes, prediction.probabilities);
+    document.getElementById("result").hidden = false;
+  }
+
+  function renderAi4iPrediction(document, probability) {
+    const isLikelyFailure = probability >= 0.5;
+    const resultContent = document.getElementById("result-content");
+    resultContent.replaceChildren();
+    const caption = document.createElement("p");
+    caption.className = "result-caption";
+    caption.textContent = "MLP 模型估計的 Machine failure = 1 機率";
+    const value = document.createElement("p");
+    value.className = "big-probability";
+    value.textContent = `${(probability * 100).toFixed(2)}%`;
+    const badge = document.createElement("span");
+    badge.className = "classification-badge";
+    badge.textContent = `以 0.5 閾值判定：${isLikelyFailure ? "預測故障" : "預測正常"}`;
+    resultContent.append(caption, value, badge);
+    document.getElementById("result").hidden = false;
+  }
+
+  function handleIrisSubmit(document, event) {
+    event.preventDefault();
+    try {
+      const fields = new FormData(document.getElementById("iris-form"));
+      const prediction = predictIris([
+        fields.get("sepalLength"),
+        fields.get("sepalWidth"),
+        fields.get("petalLength"),
+        fields.get("petalWidth"),
+      ]);
+      renderIrisPrediction(document, prediction);
+    } catch (error) {
+      showInferenceError(document, error);
+    }
+  }
+
+  function handleAi4iSubmit(document, event) {
+    event.preventDefault();
+    try {
+      const fields = new FormData(document.getElementById("ai4i-form"));
+      const probability = predictAi4i({
+        type: fields.get("type"),
+        airTemperature: fields.get("airTemperature"),
+        processTemperature: fields.get("processTemperature"),
+        rotationalSpeed: fields.get("rotationalSpeed"),
+        torque: fields.get("torque"),
+        toolWear: fields.get("toolWear"),
+      });
+      renderAi4iPrediction(document, probability);
+    } catch (error) {
+      showInferenceError(document, error);
+    }
+  }
+
+  function bindModelSwitches(document) {
+    document.getElementById("show-iris").addEventListener("click", () => showModelForm(document, "iris"));
+    document.getElementById("show-ai4i").addEventListener("click", () => showModelForm(document, "ai4i"));
+  }
+
+  function bindInferenceForms(document) {
+    document.getElementById("iris-form").addEventListener("submit", (event) => handleIrisSubmit(document, event));
+    document.getElementById("ai4i-form").addEventListener("submit", (event) => handleAi4iSubmit(document, event));
   }
 
   function initPage() {
     if (!root.document) return;
     const document = root.document;
-    const irisForm = document.getElementById("iris-form");
-    const ai4iForm = document.getElementById("ai4i-form");
-    const irisButton = document.getElementById("show-iris");
-    const ai4iButton = document.getElementById("show-ai4i");
-    const result = document.getElementById("result");
-    const resultContent = document.getElementById("result-content");
-
-    function showForm(name) {
-      const showIris = name === "iris";
-      irisForm.hidden = !showIris;
-      ai4iForm.hidden = showIris;
-      irisButton.classList.toggle("is-active", showIris);
-      ai4iButton.classList.toggle("is-active", !showIris);
-      irisButton.setAttribute("aria-pressed", String(showIris));
-      ai4iButton.setAttribute("aria-pressed", String(!showIris));
-      document.getElementById("form-heading").textContent = showIris
-        ? "輸入 Iris 花朵特徵"
-        : "輸入 AI4I 設備特徵";
-      result.hidden = true;
-    }
-
-    function showError(error) {
-      resultContent.replaceChildren();
-      const message = document.createElement("p");
-      message.setAttribute("role", "alert");
-      message.textContent = `無法計算：${error.message}`;
-      resultContent.append(message);
-      result.hidden = false;
-    }
-
-    irisButton.addEventListener("click", () => showForm("iris"));
-    ai4iButton.addEventListener("click", () => showForm("ai4i"));
-
-    irisForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      try {
-        const fields = new FormData(irisForm);
-        const prediction = predictIris([
-          fields.get("sepalLength"),
-          fields.get("sepalWidth"),
-          fields.get("petalLength"),
-          fields.get("petalWidth"),
-        ]);
-        resultContent.replaceChildren();
-        const title = document.createElement("h3");
-        title.className = "result-title";
-        title.textContent = prediction.className.replace("Iris-", "");
-        const caption = document.createElement("p");
-        caption.className = "result-caption";
-        caption.textContent = "預測類別與各類別機率";
-        resultContent.append(title, caption);
-        renderProbabilityList(resultContent, prediction.classes, prediction.probabilities);
-        result.hidden = false;
-      } catch (error) {
-        showError(error);
-      }
-    });
-
-    ai4iForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      try {
-        const fields = new FormData(ai4iForm);
-        const probability = predictAi4i({
-          type: fields.get("type"),
-          airTemperature: fields.get("airTemperature"),
-          processTemperature: fields.get("processTemperature"),
-          rotationalSpeed: fields.get("rotationalSpeed"),
-          torque: fields.get("torque"),
-          toolWear: fields.get("toolWear"),
-        });
-        const isLikelyFailure = probability >= 0.5;
-        resultContent.replaceChildren();
-        const caption = document.createElement("p");
-        caption.className = "result-caption";
-        caption.textContent = "MLP 模型估計的 Machine failure = 1 機率";
-        const value = document.createElement("p");
-        value.className = "big-probability";
-        value.textContent = `${(probability * 100).toFixed(2)}%`;
-        const badge = document.createElement("span");
-        badge.className = "classification-badge";
-        badge.textContent = `以 0.5 閾值判定：${isLikelyFailure ? "預測故障" : "預測正常"}`;
-        resultContent.append(caption, value, badge);
-        result.hidden = false;
-      } catch (error) {
-        showError(error);
-      }
-    });
-
+    bindModelSwitches(document);
+    bindInferenceForms(document);
     loadStoredResults(document);
-    showForm("iris");
+    showModelForm(document, "iris");
   }
 
   const publicApi = { predictAi4i, predictIris };
