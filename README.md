@@ -24,6 +24,7 @@ python -m unittest discover -s tests -v
 - `outputs/小論文.md`：依實際執行結果生成的小論文。
 - `data/ai4i2020.csv`：AI4I 2020 預測性維護資料集原始 CSV。
 - `outputs/ai4i_data_validation.json`：AI4I 欄位、型別、缺漏值與重複列檢查報告。
+- `outputs/ai4i_eda/`：AI4I 探索摘要與故障標籤、產品類型及感測器圖表。
 
 ## AI4I 2020 資料取得與檢查
 
@@ -40,6 +41,22 @@ python ai4i_data.py
 ```
 
 資料欄位包括識別欄位 `UDI`、`Product ID`，產品類型 `Type`，五項溫度、轉速、扭力與刀具磨耗量測，以及整體故障 `Machine failure` 和故障模式 `TWF`、`HDF`、`PWF`、`OSF`、`RNF`。本資料為合成資料；下載與分享時保留 UCI 出處，依 CC BY 4.0 授權使用。
+
+產生 EDA 摘要及圖表：
+
+```powershell
+python ai4i_eda.py
+```
+
+前處理 API 會以 `Machine failure` 為目標，只取產品類型和五項感測器特徵，排除識別欄位與故障模式標籤；資料採固定亂數種子的分層切分，編碼器與縮放器只在訓練集擬合：
+
+```python
+from ai4i_data import load_ai4i_dataset
+from ai4i_preprocessing import prepare_ai4i_data
+
+prepared = prepare_ai4i_data(load_ai4i_dataset())
+print(prepared.X_train.shape, prepared.X_test.shape)
+```
 
 ## 資料來源
 
