@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -63,6 +64,14 @@ INTEGER_COLUMNS = {
     "RNF",
 }
 NUMERIC_COLUMNS = set(EXPECTED_COLUMNS) - STRING_COLUMNS
+
+
+def dataframe_sha256(data: pd.DataFrame) -> str:
+    """Fingerprint parsed data using a stable UTF-8 CSV representation."""
+    if not isinstance(data, pd.DataFrame):
+        raise TypeError("data must be a pandas DataFrame")
+    canonical_csv = data.to_csv(index=False, lineterminator="\n").encode("utf-8")
+    return hashlib.sha256(canonical_csv).hexdigest()
 
 
 def inspect_ai4i_dataset(

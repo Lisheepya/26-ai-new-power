@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import platform
 import warnings
@@ -26,7 +25,7 @@ from sklearn.metrics import (
 )
 from sklearn.neural_network import MLPClassifier
 
-from ai4i_data import DATA_PATH, DATASET_PAGE_URL, load_ai4i_dataset
+from ai4i_data import DATA_PATH, DATASET_PAGE_URL, dataframe_sha256, load_ai4i_dataset
 from ai4i_preprocessing import AI4IPreparedData, prepare_ai4i_data
 from ai4i_preprocessing import NUMERIC_FEATURE_COLUMNS
 
@@ -123,12 +122,6 @@ def _json_safe(value: Any) -> Any:
 def _class_counts(labels: Any) -> dict[str, int]:
     values, counts = np.unique(np.asarray(labels), return_counts=True)
     return {str(int(value)): int(count) for value, count in zip(values, counts)}
-
-
-def dataframe_sha256(data: pd.DataFrame) -> str:
-    """Fingerprint the parsed dataset using a stable UTF-8 CSV representation."""
-    canonical_csv = data.to_csv(index=False, lineterminator="\n").encode("utf-8")
-    return hashlib.sha256(canonical_csv).hexdigest()
 
 
 def _grouped_permutation_importance(

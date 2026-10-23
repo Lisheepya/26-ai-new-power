@@ -1,6 +1,6 @@
-# Iris 分析與神經網路分類
+# Iris 與 AI4I 分析
 
-本專案取得 UCI Iris Dataset，探索四項花朵測量特徵與三種鳶尾花分類，使用 PCA 繪製三維分布，並以標準化加多層感知器（MLP）完成分類實驗。分析程式會產生圖表、JSON 指標和繁體中文小論文。
+本專案包含 UCI Iris 分類範例與 AI4I 2020 預測性維護分析。兩個實驗會產生圖表、機器可讀評估結果及繁體中文報告；AI4I 報告以已保存的 EDA 與模型結果產生，並連結到對應圖表。
 
 ## 環境與執行
 
@@ -12,7 +12,7 @@ python iris_analysis.py
 python -m unittest discover -s tests -v
 ```
 
-若 Windows 的 `py` 啟動器不可用，請改用已安裝的 Python 3.10 以上版本建立虛擬環境。
+若 Windows 的 `py` 啟動器不可用，可直接以已安裝的 Python 3.10 以上版本執行 `python -m venv .venv`；若 `python` 指向錯誤版本，請改用 Python 執行檔的完整路徑。
 
 ## 專案輸出
 
@@ -86,6 +86,23 @@ python ai4i_visualization.py
 - [ROC 曲線](outputs/ai4i/roc_curve.png)
 - [MLP 訓練 loss 曲線](outputs/ai4i/mlp_loss_curve.png)
 - [MLP permutation importance](outputs/ai4i/mlp_permutation_importance.png)
+
+## AI4I 小論文與完整重現流程
+
+使用 Python 3.10 以上版本。在新的環境中建立虛擬環境並安裝專案依賴後，依序取得並檢查資料、執行探索、訓練模型、產生圖表、產生小論文，最後執行測試。若 `py` 啟動器不可用，請將第一行改為 `python -m venv .venv`：
+
+```powershell
+py -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe ai4i_data.py --download
+.venv\Scripts\python.exe ai4i_eda.py
+.venv\Scripts\python.exe ai4i_modeling.py --test-size 0.2 --random-state 42
+.venv\Scripts\python.exe ai4i_visualization.py
+.venv\Scripts\python.exe ai4i_report.py
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+若 `data/ai4i2020.csv` 已存在，可略過下載並執行 `.venv\Scripts\python.exe ai4i_data.py` 驗證本機資料。分析結果保存在 `outputs/ai4i_eda/` 與 `outputs/ai4i_modeling/`，六張模型圖表保存在 `outputs/ai4i/`。報告由 `ai4i_report.py` 從 EDA 摘要與模型比較 JSON 產生，完整內容位於 [outputs/AI4I_小論文.md](outputs/AI4I_%E5%B0%8F%E8%AB%96%E6%96%87.md)；原有 Iris 報告 `outputs/小論文.md` 保留不變。模型 JSON 會記錄實際 Python 與套件版本；不同版本或平台的底層數值可能略有差異。
 
 ## 資料來源
 

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -35,6 +36,16 @@ def make_dataset() -> pd.DataFrame:
 
 
 class AI4IEDATests(unittest.TestCase):
+    def test_summary_fingerprints_the_canonical_dataset(self):
+        data = make_dataset()
+
+        report = summarize_ai4i_dataset(data)
+
+        expected = hashlib.sha256(
+            data.to_csv(index=False, lineterminator="\n").encode("utf-8")
+        ).hexdigest()
+        self.assertEqual(report["data_sha256"], expected)
+
     def test_summary_reports_schema_quality_and_descriptive_statistics(self):
         data = make_dataset()
         data.loc[0, "Torque [Nm]"] = float("nan")

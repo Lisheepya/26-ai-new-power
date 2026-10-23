@@ -15,7 +15,13 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch
 
-from ai4i_data import DATA_PATH, DATASET_PAGE_URL, inspect_ai4i_dataset, load_ai4i_dataset
+from ai4i_data import (
+    DATA_PATH,
+    DATASET_PAGE_URL,
+    dataframe_sha256,
+    inspect_ai4i_dataset,
+    load_ai4i_dataset,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -154,6 +160,7 @@ def summarize_ai4i_dataset(data: pd.DataFrame) -> dict[str, Any]:
         "dataset": "AI4I 2020 Predictive Maintenance Dataset",
         "source": DATASET_PAGE_URL,
         "rows": int(len(data)),
+        "data_sha256": dataframe_sha256(data),
         "column_count": int(len(data.columns)),
         "columns": [str(column) for column in data.columns],
         "column_types": {str(column): str(dtype) for column, dtype in data.dtypes.items()},

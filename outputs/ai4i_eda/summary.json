@@ -2,6 +2,7 @@
   "dataset": "AI4I 2020 Predictive Maintenance Dataset",
   "source": "https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset",
   "rows": 10000,
+  "data_sha256": "1dcd9c32543beb77921a24c18d79525e698c8b055e85b3320486b427e79f5b1f",
   "column_count": 14,
   "columns": [
     "UDI",
